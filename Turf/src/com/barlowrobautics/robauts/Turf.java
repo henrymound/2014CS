@@ -5,7 +5,7 @@
 /* the project.                                                               */
 /*----------------------------------------------------------------------------*/
 
-package com.4572.robauts;
+package com.barlowrobautics.robauts;
 
 
 import edu.wpi.first.wpilibj.DigitalInput;
@@ -44,7 +44,7 @@ public class Turf extends IterativeRobot {
 
         baseDrive = new RobotDrive(
                 new Victor(1), //front left motor
-                new Victor(2), //rear left motor
+                new Victor(2)  //rear left motor
                 );
         baseDrive.setExpiration(0.100); // Set the safety expiration to 100 milliseconds
         baseDrive.setSafetyEnabled(false);
@@ -87,13 +87,17 @@ public class Turf extends IterativeRobot {
     
     private void driveMotors() {
         getWatchdog().feed();
-        baseDrive.tankDrive(gamepad, gamepad.getAxisChannel(Joystick.AxisType.kThrottle), gamepad, gamepad.getAxisChannel(Joystick.AxisType.kY));
-        dispMessage(2, 1, "Right Stick: " + Double.toString(gamepad.getThrottle()));
-        dispMessage(1, 1, "Left Stick: " + Double.toString(gamepad.getY()));
+        baseDrive.tankDrive(joystickRight, joystickRight.getAxisChannel(Joystick.AxisType.kY), joystickLeft, joystickLeft.getAxisChannel(Joystick.AxisType.kY));
+        dispMessage(2, 1, "Right Stick: " + Double.toString(joystickRight.getY()));
+        dispMessage(1, 1, "Left Stick: " + Double.toString(joystickLeft.getY()));
     }
 
     private void grabInput() {
         getWatchdog().feed();
+        
+        //Drive the arm
+        
+        //Drive the shooter
         
     }
     
