@@ -30,7 +30,7 @@ public class Turf extends IterativeRobot {
     private final int LIFT_ARM = 3;
     private final int DROP_ARM = 2;
     
-    private final double ARM_SPEED = 0.25;
+    private final double ARM_SPEED = 0.50;
     private final double SHOOTER_SPEED = 0.1;
     
     
@@ -51,8 +51,8 @@ public class Turf extends IterativeRobot {
      * used for any initialization code.
      */
     public void robotInit() {
-        getWatchdog().setEnabled(false);
-        //getWatchdog().setExpiration(100); //Watchdog will function for 100 milliseconds between feeds
+        getWatchdog().setEnabled(true);
+        getWatchdog().setExpiration(100); //Watchdog will function for 100 milliseconds between feeds
         
         baseDrive = new RobotDrive(
                 new Victor(1), //front left motor
@@ -61,8 +61,8 @@ public class Turf extends IterativeRobot {
         //baseDrive.setExpiration(0.100); // Set the safety expiration to 100 milliseconds
         baseDrive.setSafetyEnabled(false);
 
-        shooterVictor = new Victor(3);
-        armVictor = new Victor(4);
+        shooterVictor = new Victor(4);
+        armVictor = new Victor(3);
         
         joystickLeft = new Joystick(1);
         joystickRight = new Joystick(2);
@@ -94,14 +94,14 @@ public class Turf extends IterativeRobot {
         
     }
     public void teleopPeriodic() {
-        //getWatchdog().feed();
-        //grabInput();
-        //driveMotors();
+        getWatchdog().feed();
+        grabInput();
+        driveMotors();
         
         cameraLight.set(Relay.Value.kForward);
         //getWatchdog().feed();
         
-        SmartDashboard.putString("TEST", "TEEEST");
+        //SmartDashboard.putString("TEST", camera.hotOrNot() ? "HOT": "NOT HOT");
     }
     
     /**
