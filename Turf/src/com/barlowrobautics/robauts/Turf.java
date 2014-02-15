@@ -24,6 +24,13 @@ import edu.wpi.first.wpilibj.Timer;
  * directory.
  */
 public class Turf extends IterativeRobot {
+    //control constants
+    private final int LIFT_ARM = 3;
+    private final int DROP_ARM = 2;
+    
+    private final double ARM_SPEED = 0.25;
+    private final double SHOOTER_SPEED = 0.1;
+    
     
     private RobotDrive baseDrive;
     private Victor shooterVictor;
@@ -96,9 +103,20 @@ public class Turf extends IterativeRobot {
         getWatchdog().feed();
         
         //Drive the arm
+        if(joystickRight.getButton(Joystick.ButtonType.kTrigger)) {
+            shooterVictor.set(SHOOTER_SPEED);
+        } else {
+            shooterVictor.set(0);
+        }
         
         //Drive the shooter
-        
+        if(joystickLeft.getRawButton(LIFT_ARM) && !joystickLeft.getRawButton(DROP_ARM)) {
+            armVictor.set(ARM_SPEED);
+        } else if(joystickLeft.getRawButton(DROP_ARM) && !joystickLeft.getRawButton(LIFT_ARM)) {
+            armVictor.set(ARM_SPEED * -1);
+        } else {
+            armVictor.set(0);
+        }
     }
     
     private void dispMessage(int lineNumber, int startingCollumn, String message) {
