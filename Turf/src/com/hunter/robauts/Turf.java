@@ -17,7 +17,6 @@ import edu.wpi.first.wpilibj.Relay;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj.camera.AxisCamera;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -45,7 +44,7 @@ public class Turf extends IterativeRobot {
     private Joystick joystickRight;
     
     private Relay cameraLight;
-    private AxisCamera camera;
+    private Camera camera;
     
     /**
      * This function is run when the robot is first started up and should be
@@ -54,7 +53,7 @@ public class Turf extends IterativeRobot {
     public void robotInit() {
         getWatchdog().setEnabled(false);
         //getWatchdog().setExpiration(100); //Watchdog will function for 100 milliseconds between feeds
-
+        
         baseDrive = new RobotDrive(
                 new Victor(1), //front left motor
                 new Victor(2)  //rear left motor
@@ -73,19 +72,27 @@ public class Turf extends IterativeRobot {
         }
         
         cameraLight = new Relay(1);
-        camera = AxisCamera.getInstance();
+        camera = new Camera();
     }
 
+    
+    
     /**
      * This function is called periodically during autonomous
      */
+    public void autonomousInit() {
+        
+    }
     public void autonomousPeriodic() {
-
+        camera.autonomous();
     }
 
     /**
      * This function is called periodically during operator control
      */
+    public void teleopInit() {
+        
+    }
     public void teleopPeriodic() {
         //getWatchdog().feed();
         //grabInput();
@@ -164,6 +171,10 @@ public class Turf extends IterativeRobot {
         DriverStationLCD.getInstance().println(ln, startingCollumn, "                                    ");
         DriverStationLCD.getInstance().println(ln, startingCollumn, message);
         DriverStationLCD.getInstance().updateLCD();
+    }
+    
+    public void disabledInit() {
+        
     }
     
 }

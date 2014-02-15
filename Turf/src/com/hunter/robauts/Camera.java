@@ -46,9 +46,6 @@ public class Camera {
     AxisCamera camera;          // the axis camera object (connected to the switch)
     CriteriaCollection cc;      // the criteria for doing the particle filter operation
     
-    public boolean auton = true;
-    public boolean enabled = true;
-    
     public class Scores {
         double rectangularity;
         double aspectRatioVertical;
@@ -67,15 +64,9 @@ public class Camera {
     };
     
     public Camera() {
+        //camera = AxisCamera.getInstance();  // get an instance of the camera
         cc = new CriteriaCollection();      // create the criteria for the particle filter
         cc.addCriteria(MeasurementType.IMAQ_MT_AREA, AREA_MINIMUM, 65535, false);
-    }
-    
-    public boolean isAutonomous() {
-        return auton;
-    }
-    public boolean isEnabled() {
-        return enabled;
     }
     
     public void autonomous() {
@@ -84,7 +75,6 @@ public class Camera {
 	int horizontalTargets[] = new int[MAX_PARTICLES];
 	int verticalTargetCount, horizontalTargetCount;
         
-        while (isAutonomous() && isEnabled()) {
             try {
                 /**
                  * Do the image capture with the camera and apply the algorithm described above. This
@@ -205,16 +195,13 @@ public class Camera {
             } catch (NIVisionException ex) {
                 ex.printStackTrace();
             }
-        }
     }
 
     /**
      * This function is called once each time the robot enters operator control.
      */
     public void operatorControl() {
-        while (!isAutonomous() && isEnabled()) {
-            Timer.delay(1);
-        }
+        //Timer.delay(1);
     }
     
     /**
