@@ -5,7 +5,7 @@
 /* the project.                                                               */
 /*----------------------------------------------------------------------------*/
 
-package com.barlowrobautics.robauts;
+package com.hunter.robauts;
 
 
 import edu.wpi.first.wpilibj.DigitalInput;
@@ -13,8 +13,11 @@ import edu.wpi.first.wpilibj.DriverStationLCD;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.Victor;
+import edu.wpi.first.wpilibj.Relay;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.camera.AxisCamera;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -41,19 +44,22 @@ public class Turf extends IterativeRobot {
     private Joystick joystickLeft;
     private Joystick joystickRight;
     
+    private Relay cameraLight;
+    private AxisCamera camera;
+    
     /**
      * This function is run when the robot is first started up and should be
      * used for any initialization code.
      */
     public void robotInit() {
-        getWatchdog().setEnabled(true);
-        getWatchdog().setExpiration(100); //Watchdog will function for 100 milliseconds between feeds
+        getWatchdog().setEnabled(false);
+        //getWatchdog().setExpiration(100); //Watchdog will function for 100 milliseconds between feeds
 
         baseDrive = new RobotDrive(
                 new Victor(1), //front left motor
                 new Victor(2)  //rear left motor
                 );
-        baseDrive.setExpiration(0.100); // Set the safety expiration to 100 milliseconds
+        //baseDrive.setExpiration(0.100); // Set the safety expiration to 100 milliseconds
         baseDrive.setSafetyEnabled(false);
 
         shooterVictor = new Victor(3);
@@ -65,6 +71,9 @@ public class Turf extends IterativeRobot {
         for (int i = 0; i < 14; i++) {
             digitalIO[i] = new DigitalInput(i + 1);
         }
+        
+        cameraLight = new Relay(1);
+        camera = AxisCamera.getInstance();
     }
 
     /**
@@ -78,9 +87,14 @@ public class Turf extends IterativeRobot {
      * This function is called periodically during operator control
      */
     public void teleopPeriodic() {
-        getWatchdog().feed();
-        grabInput();
-        driveMotors();
+        //getWatchdog().feed();
+        //grabInput();
+        //driveMotors();
+        
+        cameraLight.set(Relay.Value.kForward);
+        //getWatchdog().feed();
+        
+        SmartDashboard.putString("TEST", "TEEEST");
     }
     
     /**
