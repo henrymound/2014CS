@@ -17,6 +17,8 @@ import edu.wpi.first.wpilibj.Relay;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.Solenoid;
+import edu.wpi.first.wpilibj.Compressor;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -29,8 +31,14 @@ public class Turf extends IterativeRobot {
     //control constants
     private final int LIFT_ARM = 3;
     private final int DROP_ARM = 2;
+    private final int[] KICK_OVERRIDE = {4, 5};
+    private final int[] KICK_NORMAL = {8, 12};
+    private final int ARM_PRECISION_MODE = 2;
+    
+    private final int ARM_LIMIT_SWITCH = 2;
     
     private final double ARM_SPEED = 0.50;
+    private final double ARM_MOD = 0.50; //Mode 2 for the arm (left trigger down) is ARM_SPEED * ARM_MOD
     private final double SHOOTER_SPEED = 0.1;
     
     
@@ -42,9 +50,16 @@ public class Turf extends IterativeRobot {
     
     private Joystick joystickLeft;
     private Joystick joystickRight;
+    private Joystick joystickAlt;
     
     private Relay cameraLight;
     private Camera camera;
+    
+    private Solenoid openSolenoid;
+    private Solenoid closeSolenoid;
+    private Compressor compressor;
+    
+    private boolean liftInterrupt = false; //If the lift has been interrupted by the limit switch
     
     /**
      * This function is run when the robot is first started up and should be
@@ -64,8 +79,13 @@ public class Turf extends IterativeRobot {
         shooterVictor = new Victor(4);
         armVictor = new Victor(3);
         
+        openSolenoid = new Solenoid(1);
+        closeSolenoid = new Solenoid(2);
+        compressor = new Compressor(1,1);
+        
         joystickLeft = new Joystick(1);
         joystickRight = new Joystick(2);
+        joystickAlt = new Joystick(3);
         
         for (int i = 0; i < 14; i++) {
             digitalIO[i] = new DigitalInput(i + 1);
@@ -81,7 +101,7 @@ public class Turf extends IterativeRobot {
      * This function is called periodically during autonomous
      */
     public void autonomousInit() {
-        
+        compressor.start();
     }
     public void autonomousPeriodic() {
         camera.autonomous();
@@ -91,7 +111,7 @@ public class Turf extends IterativeRobot {
      * This function is called periodically during operator control
      */
     public void teleopInit() {
-        
+        compressor.start();
     }
     public void teleopPeriodic() {
         getWatchdog().feed();
@@ -122,22 +142,82 @@ public class Turf extends IterativeRobot {
 
     private void grabInput() {
         getWatchdog().feed();
-        
-        //Drive the arm
-        if(joystickRight.getButton(Joystick.ButtonType.kTrigger)) {
-            shooterVictor.set(SHOOTER_SPEED);
+        shooterControl();
+        armControl();
+    }
+    
+    private void shooterControl() {
+        //Drive the shooter
+        if(joystickRight.getRawButton(LIFT_ARM) && !joystickRight.getRawButton(DROP_ARM)) {
+            //Slow forward drive for the kicker
+            armVictor.set(0.10);
+        } else if(joystickRight.getRawButton(DROP_ARM) && !joystickRight.getRawButton(LIFT_ARM)) {
+            //Slow back drive for the kicker
+            armVictor.set(-0.10);
+        } else if(isPressed(joystickAlt, KICK_OVERRIDE) || (joystickLeft.getRawButton(KICK_NORMAL[0]) && joystickRight.getRawButton(KICK_NORMAL[1]))) { //Reg kick
+            //Full shoot for the kicker
+            armVictor.set(SHOOTER_SPEED);
         } else {
+            //Stop shooter if nothing is being pressed
             shooterVictor.set(0);
         }
-        
-        //Drive the shooter
-        if(joystickLeft.getRawButton(LIFT_ARM) && !joystickLeft.getRawButton(DROP_ARM)) {
-            armVictor.set(ARM_SPEED);
+    }
+    private void armControl() {
+        //Drive the arm (OLD LEFT JOYSTICK CONTROLS)
+        /*if(joystickLeft.getRawButton(LIFT_ARM) && !joystickLeft.getRawButton(DROP_ARM) && canLift()) {
+            armVictor.set(ARM_SPEED * (joystickLeft.getButton(Joystick.ButtonType.kTrigger) ? ARM_MOD : 1)); //If left trigger down, multiple ARM_SPEED by ARM_MOD
         } else if(joystickLeft.getRawButton(DROP_ARM) && !joystickLeft.getRawButton(LIFT_ARM)) {
-            armVictor.set(ARM_SPEED * -1);
+            armVictor.set((ARM_SPEED * (joystickLeft.getButton(Joystick.ButtonType.kTrigger) ? ARM_MOD : 1)) * -1);
+        } else {
+            armVictor.set(0);
+        }*/
+        
+        
+        //Drive the arm (NEW ALT JOYSTICK CONTROLS)
+        double armY = -joystickAlt.getAxis(Joystick.AxisType.kY);
+        if((armY > 0 && canLift()) || armY < 0) {
+            armVictor.set((ARM_SPEED * (joystickAlt.getRawButton(ARM_PRECISION_MODE) ? ARM_MOD : 1)));
         } else {
             armVictor.set(0);
         }
+        
+        //Drive the gripper
+        if(joystickAlt.getButton(Joystick.ButtonType.kTrigger)) {
+            //Close solenoid opens
+            closeSolenoid.set(true);
+            openSolenoid.set(false);
+        } else {
+            //Open solenoid closes 
+            closeSolenoid.set(false);
+            openSolenoid.set(true);
+        }
+        
+    }
+    
+    //Returns true when every item in an int array is pressed (for multi-button controls)
+    private boolean isPressed(Joystick js, int[] input) {
+        for(int i = 0; i < input.length; i++) {
+            if(!js.getRawButton(input[i])) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    //Determines whether or not we can continue to lift the arm further
+    private boolean canLift() {
+        boolean can = !digitalIO[ARM_LIMIT_SWITCH].get();
+        if(can) {
+            liftInterrupt = false;
+        } else {
+            if(!liftInterrupt) { //if this is the first instance of the interrupt
+                //Kick the motor back a bit
+                armVictor.set(ARM_SPEED * -1);
+            }
+            liftInterrupt = true;
+        }
+        return can;
     }
     
     private void dispMessage(int lineNumber, int startingCollumn, String message) {
