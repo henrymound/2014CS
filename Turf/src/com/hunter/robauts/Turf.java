@@ -40,13 +40,14 @@ public class Turf extends IterativeRobot {
     private final double ARM_SPEED = 0.50;
     private final double ARM_MOD = 0.50; //Mode 2 for the arm (left trigger down) is ARM_SPEED * ARM_MOD
     private final double SHOOTER_SPEED = 0.1;
-    
+    private final double DEBOUNCE_TIME = 0.004;
     
     private RobotDrive baseDrive;
     private Victor shooterVictor;
     private Victor armVictor;
-    private DigitalInput[] digitalIO = new DigitalInput[14];
-    private Timer timerTest;
+    private DigitalInput compressorSwitch;
+    private DigitalInput armSwitch;
+    
     
     private Joystick joystickLeft;
     private Joystick joystickRight;
@@ -60,7 +61,7 @@ public class Turf extends IterativeRobot {
     private Compressor compressor;
     
     private boolean liftInterrupt = false; //If the lift has been interrupted by the limit switch
-    
+    private Timer timer;
     /**
      * This function is run when the robot is first started up and should be
      * used for any initialization code.
@@ -81,18 +82,21 @@ public class Turf extends IterativeRobot {
         
         openSolenoid = new Solenoid(1);
         closeSolenoid = new Solenoid(2);
-        compressor = new Compressor(1,1);
+        compressor = new Compressor(14,1);
         
         joystickLeft = new Joystick(1);
         joystickRight = new Joystick(2);
         joystickAlt = new Joystick(3);
         
-        for (int i = 0; i < 14; i++) {
-            digitalIO[i] = new DigitalInput(i + 1);
-        }
+        
         
         cameraLight = new Relay(1);
         camera = new Camera();
+        timer = new Timer();
+        
+        compressorSwitch = new DigitalInput(1);
+        armSwitch = new DigitalInput(2);
+        
     }
 
     
@@ -139,7 +143,7 @@ public class Turf extends IterativeRobot {
         dispMessage(2, 1, "Right Stick: " + Double.toString(joystickRight.getY()));
         dispMessage(1, 1, "Left Stick: " + Double.toString(joystickLeft.getY()));
     }
-
+    
     private void grabInput() {
         getWatchdog().feed();
         shooterControl();
@@ -193,7 +197,9 @@ public class Turf extends IterativeRobot {
         }
         
     }
-    
+    private void armsInterrupt(){ //Sets victors to go downwards after microwsitch activated
+        armVictor.set(-0.1);
+    }
     //Returns true when every item in an int array is pressed (for multi-button controls)
     private boolean isPressed(Joystick js, int[] input) {
         for(int i = 0; i < input.length; i++) {
@@ -207,8 +213,10 @@ public class Turf extends IterativeRobot {
     
     //Determines whether or not we can continue to lift the arm further
     private boolean canLift() {
-        boolean can = !digitalIO[ARM_LIMIT_SWITCH].get();
-        if(can) {
+        boolean can = !armSwitch.get();
+        
+        //Flyback
+        /*if(can) {
             liftInterrupt = false;
         } else {
             if(!liftInterrupt) { //if this is the first instance of the interrupt
@@ -216,7 +224,7 @@ public class Turf extends IterativeRobot {
                 armVictor.set(ARM_SPEED * -1);
             }
             liftInterrupt = true;
-        }
+        }*/
         return can;
     }
     
